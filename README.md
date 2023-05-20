@@ -11,7 +11,7 @@ The required modules can be installed using pip: `pip install -r requirements.tx
 Make sure you have pip installed and configured correctly before running the command. Once the installation is complete, you should be able to run the script successfully.
 
 ## Configuration and Usage
-To use one should change the variables in the `config` to the desired values. For use of the Nationstates API you should also provide contact details of some shape or form in `UA` User Agent. Dont forget to input the names of your puppets in `que.txt`
+To use one should change the variables in the `config.env` to the desired values. For use of the Nationstates API you should also provide contact details of some shape or form in `UA` User Agent. Dont forget to input the names of your puppets in `que.txt`
 
 ## License
 
