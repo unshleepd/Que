@@ -1,19 +1,19 @@
 # Special thanks to:
 [audreyreal](https://github.com/audreyreal) for the awesome [NSDotPy](https://github.com/audreyreal/NSDotPy).   
-[jmikk](https://github.com/jmikk) for forcing me to think.  
+[jmikk](https://github.com/jmikk) for forcing me to think and for providing guidance and valuable feedback.  
 
 # Que
-Que, and easy way to change settings of puppets and move them between regions.
+Que is an easy way to change settings of puppets and move them between regions in the game Nationstates.
 
 ## Requirements
-Only tested on python 3.9.  
-The required modules can be installed using pip: `pip install -r requirements.txt`.  
-Make sure you have pip installed and configured correctly before running the command. Once the installation is complete, you should be able to run the script successfully.  
+This project is tested on Python 3.11. Other versions may work, but are not officially supported.
+pip install -r requirements.txt `pip install -r requirements.txt`.  
+Make sure pip is installed and added to your system's PATH before running the command. Once the dependencies are installed, you should be able to run the script successfully.  
 
 ## Configuration and Usage
-To use one should change the variables in the `config.env` to the desired values.  
-For use of the Nationstates API you should also provide contact details of some shape or form in `UA` User Agent.  
-Dont forget to input the names of your puppets in `que.txt`.  
+To use Que, update the variables in the `config.env` file to the desired values.
+For use of the Nationstates API, you should also provide contact details in the UA User Agent field.
+Don't forget to input the names of your puppets in `que.txt`.  
 
 ## License
 
