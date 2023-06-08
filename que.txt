@@ -1,8 +1,6 @@
 Your
-puppets
-name
-here
-ONLY
-ONE
-PER
-LINE
+Nations
+Here
+One
+Per
+Line
