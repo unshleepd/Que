@@ -1,0 +1,2 @@
+python quevisual.py
+pause
