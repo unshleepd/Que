@@ -4,11 +4,16 @@ from nsdotpy.session import NSSession
 from dotenv import load_dotenv
 import logging
 
-load_dotenv('config.env')  # take environment variables from .env.
+# Load environment variables from .env file
+load_dotenv('config.env')
 
+# Set up basic logging configuration
 logging.basicConfig(filename='qie.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 
 def get_env_vars():
+    """
+    Get environment variables from the system and check if any are missing.
+    """
     env_vars = {
         'UA': os.getenv('UA'),
         'password': os.getenv('PASSWORD'),
@@ -24,12 +29,17 @@ def get_env_vars():
         'target_region_password': os.getenv('TARGET_REGION_PASSWORD'),
         'flag': os.getenv('FLAG'),
     }
+
+    # Check for missing environment variables and raise error if any are found
     missing_vars = [k for k, v in env_vars.items() if v is None]
     if missing_vars:
         raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}")
     return env_vars
 
 def prompt_execution(prompt_message):
+    """
+    Prompt the user for execution of an operation and handle their response.
+    """
     response = input(prompt_message).strip().lower()
     if response == 'y':
         return True
@@ -41,6 +51,9 @@ def prompt_execution(prompt_message):
         return False
 
 def create_nation(session, nation, env_vars):
+    """
+    Try to create a nation and log the result.
+    """
     try:
         session.create_nation(
             nation,
@@ -55,6 +68,9 @@ def create_nation(session, nation, env_vars):
         logging.error(f"Error creating nation {nation}: {e}")
 
 def change_nation_settings(session, nation, env_vars):
+    """
+    Try to change a nation's settings and log the result.
+    """
     try:
         session.change_nation_settings(
             email=env_vars['email'],
@@ -73,6 +89,9 @@ def change_nation_settings(session, nation, env_vars):
         logging.error(f"Error changing settings for nation {nation}: {e}")
 
 def change_nation_flag(session, nation, env_vars):
+    """
+    Try to change a nation's flag and log the result.
+    """
     try:
         session.change_nation_flag(env_vars['flag'])
         logging.info(f"Successfully changed flag for nation {nation}")
@@ -80,6 +99,9 @@ def change_nation_flag(session, nation, env_vars):
         logging.error(f"Error changing flag for nation {nation}: {e}")
 
 def move_to_region(session, nation, env_vars):
+    """
+    Try to move a nation to a target region and log the result.
+    """
     try:
         session.move_to_region(env_vars['target_region'], env_vars['target_region_password'])
         logging.info(f"Successfully moved nation {nation} to target region")
@@ -87,6 +109,9 @@ def move_to_region(session, nation, env_vars):
         logging.error(f"Error moving nation {nation} to target region: {e}")
 
 def process_nations(session, nations, env_vars):
+    """
+    Process nations from the list, checking if they can be founded, logging in, and performing various actions based on user prompts.
+    """
     for each in nations:
         each = each.strip()
         skip_login = False
@@ -111,12 +136,15 @@ def process_nations(session, nations, env_vars):
             input("Slow down and try again.")
 
 def main():
+    """
+    Main entry point of the script. Initializes the session, processes nations and handles any occurring exceptions.
+    """
     try:
         env_vars = get_env_vars()
         session = NSSession("Que", "2.0.1", "Unshleepd", env_vars['UA'])
         with open("que.txt", "r") as q:
             pups = q.readlines()
-        
+
         process_nations(session, pups, env_vars)
 
     except EnvironmentError as e:
