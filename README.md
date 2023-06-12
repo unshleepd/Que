@@ -13,7 +13,7 @@ Make sure pip is installed and added to your system's PATH before running the co
 ## Configuration and Usage
 To use Que, update the variables in the `config.env` file to the desired values.
 For use of the Nationstates API, you should also provide contact details in the UA User Agent field.
-Don't forget to input the names of your puppets in `que.txt`.  
+Don't forget to input the names of your puppets in `que.txt` and cards you want to bid on in `cards.env`.  
 
 ## License
 
