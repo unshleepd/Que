@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
+"""
+This script facilitates various operations related to NationStates, including
+nation creation, changing nation settings, moving to a different region, and placing
+bids on cards.
+"""
 import os
-from nsdotpy.session import NSSession
-from dotenv import load_dotenv
 import logging
+from dotenv import load_dotenv
+from nsdotpy.session import NSSession
+from xml.etree import ElementTree as ET
 
 
 # Set up basic logging configuration
-logging.basicConfig(filename='que.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='que.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 
 # Load environment variables from .env file
@@ -15,6 +21,13 @@ load_dotenv('cards.env')
 
 
 def get_env_vars():
+    """
+    Extract environment variables from the loaded .env files. Raise an error if any required
+    variables are missing.
+
+    Returns:
+        dict: A dictionary mapping environment variable names to their values.
+    """
     env_vars = {
         'UA': os.getenv('UA'),
         'password': os.getenv('PASSWORD'),
@@ -40,6 +53,25 @@ def get_env_vars():
     return env_vars
 
 
+def check_population(session, nation):
+    """
+    Check the population of a nation.
+
+    Parameters:
+        session (NSSession): The current NationStates session.
+        nation (str): The name of the nation whose population is to be checked.
+
+    Returns:
+        int: The population of the nation.
+    """
+    data = {"nation": nation, "q": "population"}
+    response = session.api_request(data, _auth=None)
+    root = ET.fromstring(response.text)
+    population = int(root.find('POPULATION').text)
+    
+    return population
+
+
 def bid_on_cards(session, env_vars):
     """
     Bid on cards with the given ids, seasons and prices.
@@ -54,6 +86,7 @@ def bid_on_cards(session, env_vars):
             logging.info(f"Successfully placed bid for card {card_id} in season {season} with price {price}")
         except Exception as e:
             logging.error(f"Error placing bid for card {card_id} in season {season} with price {price}: {e}")
+
 
 
 def prompt_execution(prompt_message):
@@ -113,21 +146,32 @@ def change_nation_settings(session, nation, env_vars):
     """
 
     try:
-        session.change_nation_settings(
-            email=env_vars['email'],
-            pretitle=env_vars['pretitle'],
-            slogan=env_vars['slogan'],
-            currency=env_vars['currency'],
-            animal=env_vars['animal'],
-            demonym_noun=env_vars['demonym_noun'],
-            demonym_adjective=env_vars['demonym_adjective'],
-            demonym_plural=env_vars['demonym_plural']
-        )
+        settings = {
+            'email': env_vars['email'],
+            'slogan': env_vars['slogan'],
+            'currency': env_vars['currency'],
+            'animal': env_vars['animal'],
+            'demonym_noun': env_vars['demonym_noun'],
+            'demonym_adjective': env_vars['demonym_adjective'],
+            'demonym_plural': env_vars['demonym_plural']
+        }
+
+        # Assuming check_population(session, nation) returns the population of a nation
+        population = check_population(session, nation)
+        if population >= 250:
+            settings['pretitle'] = env_vars['pretitle']
+        else:
+            print(f"The population of nation {nation} is less than 250 million. Hence, pretitle cannot be changed.")
+        
+        session.change_nation_settings(**settings)
+
         with open("response.html", "w", encoding="utf-8") as f:
             f.write(session.current_page[1])
         logging.info(f"Successfully changed settings for nation {nation}")
     except Exception as e:
         logging.error(f"Error changing settings for nation {nation}: {e}")
+
+
 
 
 def change_nation_flag(session, nation, env_vars):
@@ -187,14 +231,21 @@ def process_nations(session, nations, env_vars):
 
         # Try to log in to the nation
         if not skip_login and session.login(each, env_vars['password']):
+            # Call the settings function
             if prompt_execution(f"Do you want to change {each} settings? (y/n): "):
                 change_nation_settings(session, each, env_vars)
 
+            # Call the flag function
             if prompt_execution(f"Do you want to change {each} flag? (y/n): "):
                 change_nation_flag(session, each, env_vars)
 
+            # Call the mover function
             if prompt_execution(f"Do you want to move {each} to target region? (y/n): "):
                 move_to_region(session, each, env_vars)
+                
+            # Call the bidding function
+            if prompt_execution(f"Do you want to place bids? (y/n): "):
+                bid_on_cards(session, env_vars)   
         elif not skip_login:
             print(f"Could not login with {each}")
             input("Slow down and try again.")
@@ -202,20 +253,20 @@ def process_nations(session, nations, env_vars):
 
 def main():
     """
-    Main entry point of the script. Initializes the session, processes nations and handles any occurring exceptions.
+    Entry point for the script. Initializes an NSSession, extracts environment variables,
+    reads the list of nations, and processes each nation in turn.
+
+    Exceptions are caught and logged to a file.
     """
 
     try:
         env_vars = get_env_vars()
-        session = NSSession("Que", "2.0.1", "Unshleepd", env_vars['UA'])
+        session = NSSession("Que", "2.2.0", "Unshleepd", env_vars['UA'])
         with open("que.txt", "r") as q:
             pups = q.readlines()
 
         process_nations(session, pups, env_vars)
         
-        # Call the bidding function
-        if prompt_execution(f"Do you want to place bids? (y/n): "):
-            bid_on_cards(session, env_vars)
 
     except EnvironmentError as e:
         logging.error(f"Configuration error: {e}")
