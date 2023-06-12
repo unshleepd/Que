@@ -4,11 +4,14 @@ from nsdotpy.session import NSSession
 from dotenv import load_dotenv
 import logging
 
-# Load environment variables from .env file
-load_dotenv('config.env')
 
 # Set up basic logging configuration
 logging.basicConfig(filename='que.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+
+
+# Load environment variables from .env file
+load_dotenv('config.env')
+load_dotenv('cards.env')
 
 
 def get_env_vars():
@@ -26,11 +29,11 @@ def get_env_vars():
         'target_region': os.getenv('TARGET_REGION'),
         'target_region_password': os.getenv('TARGET_REGION_PASSWORD'),
         'flag': os.getenv('FLAG'),
-        'card_ids': os.getenv('CARD_IDS').split(','),
-        'seasons': os.getenv('SEASONS').split(','),
-        'prices': os.getenv('PRICES').split(',')
+        'card_ids': os.getenv('CARD_IDS').split(',') if os.getenv('CARD_IDS') else None,
+        'seasons': os.getenv('SEASONS').split(',') if os.getenv('SEASONS') else None,
+        'prices': os.getenv('PRICES').split(',') if os.getenv('PRICES') else None,
     }
-    missing_vars = [k for k, v in env_vars.items() if v is None]
+    missing_vars = [k for k, v in env_vars.items() if v is None and k not in ['card_ids', 'seasons', 'prices']]
     if missing_vars:
         raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}")
 
