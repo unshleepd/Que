@@ -20,15 +20,20 @@ load_dotenv('config.env')
 load_dotenv('cards.env')
 
 
+# Further comments added within functions to describe steps of the process
 def get_env_vars():
     """
-    Extract environment variables from the loaded .env files. Raise an error if any required
-    variables are missing.
+    Extracts and validates environment variables from the loaded .env files.
+
+    Raises:
+        EnvironmentError: If any required variables are missing.
 
     Returns:
         dict: A dictionary mapping environment variable names to their values.
     """
+    # Define the environment variables we need
     env_vars = {
+        # Various nation attributes
         'UA': os.getenv('UA'),
         'password': os.getenv('PASSWORD'),
         'email': os.getenv('EMAIL'),
@@ -42,10 +47,13 @@ def get_env_vars():
         'target_region': os.getenv('TARGET_REGION'),
         'target_region_password': os.getenv('TARGET_REGION_PASSWORD'),
         'flag': os.getenv('FLAG'),
+        # Card trading information
         'card_ids': os.getenv('CARD_IDS').split(',') if os.getenv('CARD_IDS') else None,
         'seasons': os.getenv('SEASONS').split(',') if os.getenv('SEASONS') else None,
         'prices': os.getenv('PRICES').split(',') if os.getenv('PRICES') else None,
     }
+    
+    # Check for missing environment variables
     missing_vars = [k for k, v in env_vars.items() if v is None and k not in ['card_ids', 'seasons', 'prices']]
     if missing_vars:
         raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}")
@@ -55,10 +63,10 @@ def get_env_vars():
 
 def check_population(session, nation):
     """
-    Check the population of a nation.
+    Queries the NationStates API to retrieve the population of a specific nation.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation whose population is to be checked.
 
     Returns:
@@ -74,11 +82,12 @@ def check_population(session, nation):
 
 def bid_on_cards(session, env_vars):
     """
-    Bid on cards with the given ids, seasons and prices.
+    Attempts to place bids on a list of cards.
 
     Parameters:
-        session (NSSession): The current NationStates session.
-        env_vars (dict): A dictionary of environment variables.
+        session (NSSession): An authenticated NationStates session.
+        env_vars (dict): A dictionary of environment variables, which must include 'card_ids',
+                         'seasons', and 'prices'.
     """
     for card_id, season, price in zip(env_vars['card_ids'], env_vars['seasons'], env_vars['prices']):
         try:
@@ -89,36 +98,37 @@ def bid_on_cards(session, env_vars):
 
 
 
+# User input validation improved to repeat the question until a valid response is given
 def prompt_execution(prompt_message):
     """
-    Prompt the user for execution of an operation and handle their response.
+    Asks the user whether to execute a specific operation.
 
     Parameters:
-        prompt_message (str): Message to display to the user for the prompt.
+        prompt_message (str): The message to display to the user when asking for input.
 
     Returns:
         bool: True if the user's response was 'y', otherwise False.
     """
-
-    response = input(prompt_message).strip().lower()
-    if response == 'y':
-        return True
-    elif response == 'n':
-        print("Skipping operation.")
-        return False
-    else:
-        print("Invalid input, skipping operation.")
-        return False
+    while True:
+        response = input(prompt_message).strip().lower()
+        if response == 'y':
+            return True
+        elif response == 'n':
+            print("Skipping operation.")
+            return False
+        else:
+            print("Invalid input, please respond with 'y' or 'n'.")
+            # Instead of skipping operation on invalid input, the prompt repeats until valid input is given
 
 
 def create_nation(session, nation, env_vars):
     """
-    Try to create a nation and log the result.
+    Attempts to create a new nation using the provided session and details.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation to be created.
-        env_vars (dict): A dictionary of environment variables.
+        env_vars (dict): A dictionary of environment variables containing nation details.
     """
 
     try:
@@ -137,12 +147,12 @@ def create_nation(session, nation, env_vars):
 
 def change_nation_settings(session, nation, env_vars):
     """
-    Try to change a nation's settings and log the result.
+    Attempts to change a nation's settings.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation whose settings are to be changed.
-        env_vars (dict): A dictionary of environment variables.
+        env_vars (dict): A dictionary of environment variables containing the new settings.
     """
 
     try:
@@ -176,12 +186,12 @@ def change_nation_settings(session, nation, env_vars):
 
 def change_nation_flag(session, nation, env_vars):
     """
-    Try to change a nation's flag and log the result.
+    Attempts to change a nation's flag.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation whose flag is to be changed.
-        env_vars (dict): A dictionary of environment variables.
+        env_vars (dict): A dictionary of environment variables containing the new flag.
     """
 
     try:
@@ -193,12 +203,12 @@ def change_nation_flag(session, nation, env_vars):
 
 def move_to_region(session, nation, env_vars):
     """
-    Try to move a nation to a target region and log the result.
+    Attempts to move a nation to a specified region.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation that is to be moved.
-        env_vars (dict): A dictionary of environment variables.
+        env_vars (dict): A dictionary of environment variables containing the target region and password.
     """
 
     try:
@@ -210,12 +220,12 @@ def move_to_region(session, nation, env_vars):
 
 def process_nations(session, nations, env_vars):
     """
-    Process nations from the list, checking if they can be founded, logging in, and performing various actions based on user prompts.
+    Processes a list of nations, checking if they can be founded, logging in, and performing various actions.
 
     Parameters:
-        session (NSSession): The current NationStates session.
+        session (NSSession): An authenticated NationStates session.
         nations (list): A list of nation names to be processed.
-        env_vars (dict): A dictionary of environment variables.
+        env_vars (dict): A dictionary of environment variables containing the details for nation creation and actions.
     """
 
     for each in nations:
@@ -253,10 +263,9 @@ def process_nations(session, nations, env_vars):
 
 def main():
     """
-    Entry point for the script. Initializes an NSSession, extracts environment variables,
-    reads the list of nations, and processes each nation in turn.
-
-    Exceptions are caught and logged to a file.
+    Main entry point for the script. Initializes an NSSession, extracts environment variables,
+    reads the list of nations, and processes each nation in turn. Any exceptions that occur during
+    execution are caught and logged to a file.
     """
 
     try:
