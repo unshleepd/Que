@@ -6,7 +6,7 @@
 Que is an easy way to change settings of puppets and move them between regions in the game Nationstates.
 
 ## Requirements
-This project is tested on Python 3.11. Other versions may work, but are not officially supported.
+This project is tested on Python 3.11. Other versions may work, but are not officially tested.
 pip install -r requirements.txt `pip install -r requirements.txt`.  
 Make sure pip is installed and added to your system's PATH before running the command. Once the dependencies are installed, you should be able to run the script successfully.  
 
