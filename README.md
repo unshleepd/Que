@@ -15,6 +15,9 @@ To use Que, update the variables in the `config.env` file to the desired values.
 For use of the Nationstates API, you should also provide contact details in the UA User Agent field.
 Don't forget to input the names of your puppets in `que.txt` and cards you want to bid on in `cards.env`.  
 
+## Docs
+https://unshleepd.github.io/docs/que.html
+
 ## License
 
 [AGPL3.0-or-later](https://choosealicense.com/licenses/agpl-3.0/). Any project that uses this library must be licensed under AGPL3.0-or-later as well. If being used in a web application, the source code must be prominently made available to users.
