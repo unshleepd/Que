@@ -8,7 +8,6 @@ import os
 import logging
 from dotenv import load_dotenv
 from nsdotpy.session import NSSession
-from xml.etree import ElementTree as ET
 
 
 # Set up basic logging configuration
@@ -37,6 +36,7 @@ def get_env_vars():
         'UA': os.getenv('UA'),
         'password': os.getenv('PASSWORD'),
         'email': os.getenv('EMAIL'),
+        'notify': os.getenv('NOTIFY'),
         'pretitle': os.getenv('PRETITLE'),
         'slogan': os.getenv('SLOGAN'),
         'currency': os.getenv('CURRENCY'),
@@ -44,6 +44,9 @@ def get_env_vars():
         'demonym_noun': os.getenv('DEMONYM_NOUN'),
         'demonym_adjective': os.getenv('DEMONYM_ADJECTIVE'),
         'demonym_plural': os.getenv('DEMONYM_PLURAL'),
+        'capital': os.getenv('CAPITAL'),
+        'leader': os.getenv('LEADER'),
+        'faith': os.getenv('FAITH'),
         'target_region': os.getenv('TARGET_REGION'),
         'target_region_password': os.getenv('TARGET_REGION_PASSWORD'),
         'flag': os.getenv('FLAG'),
@@ -72,10 +75,8 @@ def check_population(session, nation):
     Returns:
         int: The population of the nation.
     """
-    data = {"nation": nation, "q": "population"}
-    response = session.api_request(data, _auth=None)
-    root = ET.fromstring(response.text)
-    population = int(root.find('POPULATION').text)
+    response = session.api_request(api="nation", target=nation, shard="population")
+    population = int(response['population'])
     
     return population
 
@@ -158,12 +159,16 @@ def change_nation_settings(session, nation, env_vars):
     try:
         settings = {
             'email': env_vars['email'],
+            'notify': env_vars['notify'],
             'slogan': env_vars['slogan'],
             'currency': env_vars['currency'],
             'animal': env_vars['animal'],
             'demonym_noun': env_vars['demonym_noun'],
             'demonym_adjective': env_vars['demonym_adjective'],
-            'demonym_plural': env_vars['demonym_plural']
+            'demonym_plural': env_vars['demonym_plural'],
+            'capital': env_vars['capital'],
+            'leader': env_vars['leader'],
+            'faith': env_vars['faith']
         }
 
         # Assuming check_population(session, nation) returns the population of a nation
@@ -175,8 +180,7 @@ def change_nation_settings(session, nation, env_vars):
         
         session.change_nation_settings(**settings)
 
-        with open("response.html", "w", encoding="utf-8") as f:
-            f.write(session.current_page[1])
+
         logging.info(f"Successfully changed settings for nation {nation}")
     except Exception as e:
         logging.error(f"Error changing settings for nation {nation}: {e}")
@@ -226,8 +230,10 @@ def process_nations(session, nations, env_vars):
         session (NSSession): An authenticated NationStates session.
         nations (list): A list of nation names to be processed.
         env_vars (dict): A dictionary of environment variables containing the details for nation creation and actions.
-    """
 
+    Returns:
+        None
+    """
     for each in nations:
         each = each.strip()
         skip_login = False
