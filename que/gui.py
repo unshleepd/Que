@@ -166,7 +166,7 @@ class TextHandler(logging.Handler):
         self.text_widget.see(tk.END)  # Scroll to the end to show the new message
         self.text_widget.config(state='disabled')  # Disable editing again
 
-def setup_logging(log_filename="script_log.txt"):
+def setup_logging(log_filename="que_log.txt"):
     """
     Sets up logging to both a file and the GUI log window.
     """
@@ -284,7 +284,7 @@ start_button = tk.Button(
 start_button.grid(row=2, column=0, columnspan=2, pady=10)  # Place the Start button in the grid
 
 # Set up logging to file and GUI
-setup_logging("script_log.txt")  # Initialize logging handlers
+setup_logging("que_log.txt")  # Initialize logging handlers
 
 # Start the Tkinter event loop
 root.mainloop()  # Begin the GUI's main event loop

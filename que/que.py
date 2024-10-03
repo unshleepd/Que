@@ -5,17 +5,8 @@ changing nation settings, moving to a different region, and placing bids on card
 """
 
 import os  # Module for interacting with the operating system
-import logging  # Module for logging messages
 from dotenv import load_dotenv  # Function to load environment variables from a .env file
 from nsdotpy.session import NSSession  # Import NSSession class from nsdotpy library
-
-# Set up basic logging configuration
-logging.basicConfig(
-    filename='que.log',      # Log file name where logs will be stored
-    filemode='w',            # Overwrite the log file on each run ('w' for write mode)
-    format='%(name)s - %(levelname)s - %(message)s',  # Log message format
-    level=logging.DEBUG      # Log level set to DEBUG to capture all levels of logs
-)
 
 # Load environment variables from .env files
 load_dotenv('config.env')  # Load general configuration variables from config.env
