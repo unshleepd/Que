@@ -1,3 +1,11 @@
+# gui.py
+# -*- coding: utf-8 -*-
+"""
+This script creates a graphical user interface (GUI) for interacting with the `que.py` script.
+It allows users to process nations in the NationStates game through a user-friendly interface,
+providing options to change settings, change flags, move to regions, and place bids on cards.
+"""
+
 import tkinter as tk  # Import Tkinter library for GUI development
 from tkinter import scrolledtext, messagebox, filedialog  # Import specific widgets and dialogs
 import threading  # Import threading to run tasks in separate threads
@@ -21,12 +29,24 @@ change_flag_var = tk.BooleanVar(value=True)      # Variable for 'Change Flag' sw
 move_region_var = tk.BooleanVar(value=True)      # Variable for 'Move to Region' switch
 place_bids_var = tk.BooleanVar(value=True)       # Variable for 'Place Bids' switch
 
-# Definition of OnOffSwitch class with two columns
 class OnOffSwitch(tk.Frame):
     """
     Custom widget that represents an On/Off switch with a label.
+
+    Attributes:
+        variable (tk.BooleanVar): The control variable associated with the switch.
+        text (str): The label text for the switch.
     """
     def __init__(self, master, text, variable, **kwargs):
+        """
+        Initializes the OnOffSwitch widget.
+
+        Parameters:
+            master (tk.Widget): The parent widget.
+            text (str): The label text for the switch.
+            variable (tk.BooleanVar): The control variable associated with the switch.
+            **kwargs: Additional keyword arguments for the Frame.
+        """
         super().__init__(master, **kwargs)
         self.variable = variable  # Control variable (BooleanVar)
         self.text = text  # Label text for the switch
@@ -140,18 +160,29 @@ log_window.grid(row=1, column=0, columnspan=2, sticky='nsew')  # Place it in the
 # Set state to 'disabled' to make the log window non-editable
 log_window.config(state='disabled')  # Prevent user from editing the log content
 
-# Custom logging handler to write logs to the GUI
 class TextHandler(logging.Handler):
     """
     Logging handler that directs log messages to a Tkinter Text widget.
+    
+    Attributes:
+        text_widget (tk.Text): The text widget where logs will be displayed.
     """
     def __init__(self, text_widget):
+        """
+        Initialize the TextHandler with a reference to a text widget.
+        
+        Parameters:
+            text_widget (tk.Text): The widget where log messages will be displayed.
+        """
         logging.Handler.__init__(self)
         self.text_widget = text_widget  # Reference to the text widget
 
     def emit(self, record):
         """
         Emit a record to the text widget.
+        
+        Parameters:
+            record (logging.LogRecord): The log record to be emitted.
         """
         msg = self.format(record)  # Format the log message
         # Ensure thread-safe GUI updates using after()
@@ -160,6 +191,9 @@ class TextHandler(logging.Handler):
     def write_message(self, msg):
         """
         Write a message to the text widget in a thread-safe manner.
+        
+        Parameters:
+            msg (str): The message to write to the text widget.
         """
         self.text_widget.config(state='normal')  # Make the text widget editable
         self.text_widget.insert(tk.END, msg + '\n')  # Insert the log message at the end
@@ -169,6 +203,9 @@ class TextHandler(logging.Handler):
 def setup_logging(log_filename="que_log.txt"):
     """
     Sets up logging to both a file and the GUI log window.
+    
+    Parameters:
+        log_filename (str): The name of the log file.
     """
     logger = logging.getLogger()  # Get the root logger
     logger.setLevel(logging.INFO)  # Set the logging level to INFO
@@ -183,6 +220,9 @@ def setup_logging(log_filename="que_log.txt"):
     text_handler = TextHandler(log_window)  # Create a handler for the GUI log window
     text_handler.setFormatter(formatter)  # Set the formatter for the text handler
     logger.addHandler(text_handler)  # Add the text handler to the logger
+
+# Set up logging to file and GUI
+setup_logging("que_log.txt")  # Initialize logging handlers
 
 def start_script():
     """
@@ -217,6 +257,12 @@ def start_script():
 def run_script(change_settings, change_flag, move_region, place_bids):
     """
     Runs the main processing script with the given parameters.
+    
+    Parameters:
+        change_settings (bool): Whether to change nation settings.
+        change_flag (bool): Whether to change the nation's flag.
+        move_region (bool): Whether to move the nation to a target region.
+        place_bids (bool): Whether to place bids on cards.
     """
     global script_thread  # Access the global variable
     try:
@@ -283,8 +329,7 @@ start_button = tk.Button(
 )  # Create a Start button widget
 start_button.grid(row=2, column=0, columnspan=2, pady=10)  # Place the Start button in the grid
 
-# Set up logging to file and GUI
-setup_logging("que_log.txt")  # Initialize logging handlers
+logging.info("GUI initialized successfully.")  # Log that the GUI has been initialized
 
 # Start the Tkinter event loop
 root.mainloop()  # Begin the GUI's main event loop

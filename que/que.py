@@ -1,12 +1,27 @@
+# que.py
 # -*- coding: utf-8 -*-
 """
 This script facilitates various operations related to NationStates, including
 changing nation settings, moving to a different region, and placing bids on cards.
+
+Functions:
+- get_env_vars(): Extracts and validates environment variables.
+- check_population(session, nation): Retrieves the population of a nation.
+- bid_on_cards(session, env_vars): Places bids on specified cards.
+- change_nation_settings(session, nation, env_vars): Updates a nation's settings.
+- change_nation_flag(session, nation, env_vars): Changes a nation's flag.
+- move_to_region(session, nation, env_vars): Moves a nation to a target region.
+- process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids): Processes a list of nations.
+- main(): Main function to orchestrate nation processing.
 """
 
 import os  # Module for interacting with the operating system
+import logging  # Module for logging messages
 from dotenv import load_dotenv  # Function to load environment variables from a .env file
 from nsdotpy.session import NSSession  # Import NSSession class from nsdotpy library
+
+# Get a logger for this module
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env files
 load_dotenv('config.env')  # Load general configuration variables from config.env
@@ -67,13 +82,13 @@ def check_population(session, nation):
         nation (str): The name of the nation whose population is to be checked.
 
     Returns:
-        int: The population of the nation.
+        int: The population of the nation in millions.
     """
     # Make an API request to get the nation's population
     response = session.api_request(api="nation", target=nation, shard="population")
     # The population is returned as a string, convert it to an integer
     population = int(response['population'])
-    
+
     return population  # Return the population value
 
 def bid_on_cards(session, env_vars):
@@ -84,10 +99,15 @@ def bid_on_cards(session, env_vars):
         session (NSSession): An authenticated NationStates session.
         env_vars (dict): A dictionary of environment variables, which must include 'card_ids',
                          'seasons', and 'prices'.
+
+    Logs:
+        Info: Successful bid placement.
+        Warning: Missing card trading variables.
+        Error: Errors encountered during bid placement.
     """
     # Check if card trading variables are available
     if not all([env_vars['card_ids'], env_vars['seasons'], env_vars['prices']]):
-        logging.warning("Card trading variables are missing. Skipping card bidding.")
+        logger.warning("Card trading variables are missing. Skipping card bidding.")
         return
 
     # Loop over each card to place a bid
@@ -95,9 +115,10 @@ def bid_on_cards(session, env_vars):
         try:
             # Place a bid on the card
             session.bid(price, card_id, season)
-            logging.info(f"Successfully placed bid for card {card_id} in season {season} with price {price}")
+            logger.info(f"Successfully placed bid for card {card_id} in season {season} with price {price}")
         except Exception as e:
-            logging.error(f"Error placing bid for card {card_id} in season {season} with price {price}: {e}")
+            # Log any errors encountered
+            logger.error(f"Error placing bid for card {card_id} in season {season} with price {price}: {e}")
 
 def change_nation_settings(session, nation, env_vars):
     """
@@ -107,6 +128,10 @@ def change_nation_settings(session, nation, env_vars):
         session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation whose settings are to be changed.
         env_vars (dict): A dictionary of environment variables containing the new settings.
+
+    Logs:
+        Info: Successful settings change.
+        Error: Errors encountered during settings change.
     """
     try:
         # Prepare the settings to be updated
@@ -130,16 +155,15 @@ def change_nation_settings(session, nation, env_vars):
             # If population is sufficient, include 'pretitle' in settings
             settings['pretitle'] = env_vars['pretitle']
         else:
-            # Otherwise, notify that pretitle cannot be changed
-            print(f"The population of nation {nation} is less than 250 million. Hence, pretitle cannot be changed.")
-        
+            # Otherwise, log that pretitle cannot be changed
+            logger.info(f"The population of nation {nation} is less than 250 million. Pretitle cannot be changed.")
+
         # Apply the new settings to the nation
         session.change_nation_settings(**settings)
-
-        logging.info(f"Successfully changed settings for nation {nation}")
+        logger.info(f"Successfully changed settings for nation {nation}")
     except Exception as e:
         # Log any errors that occur during the process
-        logging.error(f"Error changing settings for nation {nation}: {e}")
+        logger.error(f"Error changing settings for nation {nation}: {e}")
 
 def change_nation_flag(session, nation, env_vars):
     """
@@ -149,14 +173,18 @@ def change_nation_flag(session, nation, env_vars):
         session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation whose flag is to be changed.
         env_vars (dict): A dictionary of environment variables containing the new flag.
+
+    Logs:
+        Info: Successful flag change.
+        Error: Errors encountered during flag change.
     """
     try:
         # Change the nation's flag using the provided flag data
         session.change_nation_flag(env_vars['flag'])
-        logging.info(f"Successfully changed flag for nation {nation}")
+        logger.info(f"Successfully changed flag for nation {nation}")
     except Exception as e:
         # Log any errors that occur during the flag change
-        logging.error(f"Error changing flag for nation {nation}: {e}")
+        logger.error(f"Error changing flag for nation {nation}: {e}")
 
 def move_to_region(session, nation, env_vars):
     """
@@ -166,14 +194,18 @@ def move_to_region(session, nation, env_vars):
         session (NSSession): An authenticated NationStates session.
         nation (str): The name of the nation that is to be moved.
         env_vars (dict): A dictionary of environment variables containing the target region and password.
+
+    Logs:
+        Info: Successful region move.
+        Error: Errors encountered during region move.
     """
     try:
         # Move the nation to the target region, using a password if necessary
         session.move_to_region(env_vars['target_region'], env_vars['target_region_password'])
-        logging.info(f"Successfully moved nation {nation} to target region")
+        logger.info(f"Successfully moved nation {nation} to target region")
     except Exception as e:
         # Log any errors that occur during the move
-        logging.error(f"Error moving nation {nation} to target region: {e}")
+        logger.error(f"Error moving nation {nation} to target region: {e}")
 
 def process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids):
     """
@@ -187,15 +219,19 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
         change_flag (bool): Whether to change the nation's flag.
         move_region (bool): Whether to move the nation to a target region.
         place_bids (bool): Whether to place bids on cards.
+
+    Logs:
+        Warning: If unable to log in to a nation.
     """
     for each in nations:
         each = each.strip()  # Remove any leading/trailing whitespace
         skip_login = False  # Flag to determine if login should be skipped
 
-        # Check if the nation can be founded (e.g., if the name is available)
+        # Check if the nation can be founded (i.e., if the name is available)
         if session.can_nation_be_founded(each):
             # Since the nation doesn't exist, skip login
             skip_login = True
+            logger.warning(f"Nation {each} does not exist. Skipping.")
 
         # Try to log in to the nation if not skipping login
         if not skip_login and session.login(each, env_vars['password']):
@@ -210,18 +246,25 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
                 bid_on_cards(session, env_vars)
         elif not skip_login:
             # Unable to log in to the nation
-            print(f"Could not login with {each}")
-            logging.warning(f"Could not login with {each}")
+            logger.warning(f"Could not log in with {each}")
 
 def main():
     """
     Main function that orchestrates the processing of nations.
+
+    It retrieves environment variables, initializes the session, reads the list of nations,
+    and calls process_nations() with the appropriate flags.
+
+    Logs:
+        Error: Configuration errors or unexpected exceptions.
     """
     try:
         # Retrieve environment variables
         env_vars = get_env_vars()
+
         # Initialize the NationStates session with appropriate user agent
-        session = NSSession("Que", "2.2.0", "Unshleepd", env_vars['UA'])
+        session = NSSession("Que", "3.0.0", "Unshleepd", env_vars['UA'])
+
         # Read the list of nations from a file named 'que.txt'
         with open("que.txt", "r") as q:
             pups = q.readlines()  # Read all lines (nation names)
@@ -239,12 +282,15 @@ def main():
 
     except EnvironmentError as e:
         # Handle missing environment variables
-        logging.error(f"Configuration error: {e}")
-        print(f"Configuration error: {e}")
+        logger.error(f"Configuration error: {e}")
     except Exception as e:
         # Handle any other unexpected errors
-        logging.error(f"An unexpected error occurred: {e}")
-        print(f"An unexpected error occurred: {e}")
+        logger.error(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
+    # Configure logging when running as the main script
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(message)s', datefmt='%I:%M:%S %p'
+    )
     main()  # Call the main function when the script is executed directly
