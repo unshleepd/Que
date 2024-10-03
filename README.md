@@ -16,7 +16,7 @@ For use of the Nationstates API, you should also provide contact details in the 
 Don't forget to input the names of your puppets in `que.txt` and cards you want to bid on in `cards.env`.  
 
 ## Docs
-[https://unshleepd.github.io/docs/que.html](https://unshleepd.github.io/Que/que.html)
+[https://unshleepd.github.io/docs/index.html](https://unshleepd.github.io/Que/index.html)
 
 ## License
 
