@@ -22,6 +22,9 @@ from nsdotpy.session import NSSession  # Import NSSession class from nsdotpy lib
 
 # Get a logger for this module
 logger = logging.getLogger(__name__)
+"""
+Initializes and returns a logger instance for this module.
+"""
 
 # Load environment variables from .env files
 load_dotenv('config.env')  # Load general configuration variables from config.env
