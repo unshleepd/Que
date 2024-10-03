@@ -221,7 +221,7 @@ def main():
         # Retrieve environment variables
         env_vars = get_env_vars()
         # Initialize the NationStates session with appropriate user agent
-        session = NSSession("Que", "3.0.0", "Unshleepd", env_vars['UA'])
+        session = NSSession("Que", "2.2.0", "Unshleepd", env_vars['UA'])
         # Read the list of nations from a file named 'que.txt'
         with open("que.txt", "r") as q:
             pups = q.readlines()  # Read all lines (nation names)
