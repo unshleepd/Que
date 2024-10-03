@@ -100,26 +100,7 @@ def bid_on_cards(session, env_vars):
 
 
 # User input validation improved to repeat the question until a valid response is given
-def prompt_execution(prompt_message):
-    """
-    Asks the user whether to execute a specific operation.
-
-    Parameters:
-        prompt_message (str): The message to display to the user when asking for input.
-
-    Returns:
-        bool: True if the user's response was 'y', otherwise False.
-    """
-    while True:
-        response = input(prompt_message).strip().lower()
-        if response == 'y':
-            return True
-        elif response == 'n':
-            print("Skipping operation.")
-            return False
-        else:
-            print("Invalid input, please respond with 'y' or 'n'.")
-            # Instead of skipping operation on invalid input, the prompt repeats until valid input is given
+         # Instead of skipping operation on invalid input, the prompt repeats until valid input is given
 
 
 def create_nation(session, nation, env_vars):
@@ -222,71 +203,55 @@ def move_to_region(session, nation, env_vars):
         logging.error(f"Error moving nation {nation} to target region: {e}")
 
 
-def process_nations(session, nations, env_vars):
-    """
-    Processes a list of nations, checking if they can be founded, logging in, and performing various actions.
-
-    Parameters:
-        session (NSSession): An authenticated NationStates session.
-        nations (list): A list of nation names to be processed.
-        env_vars (dict): A dictionary of environment variables containing the details for nation creation and actions.
-
-    Returns:
-        None
-    """
+def process_nations(session, nations, env_vars, create_nation, change_settings, change_flag, move_region, place_bids):
+    # Function implementation
     for each in nations:
         each = each.strip()
         skip_login = False
 
-        # Check if the nation can be founded
-        if session.can_nation_be_founded(each):
-            if prompt_execution(f"Do you want to create {each}? (y/n): "):
-                create_nation(session, each, env_vars)
-            else:
-                skip_login = True
+        # Check if nation can be founded and if create_nation is enabled
+        if create_nation and session.can_nation_be_founded(each):
+            create_nation(session, each, env_vars)
+            skip_login = True
 
         # Try to log in to the nation
         if not skip_login and session.login(each, env_vars['password']):
-            # Call the settings function
-            if prompt_execution(f"Do you want to change {each} settings? (y/n): "):
+            # Call functions based on switch values
+            if change_settings:
                 change_nation_settings(session, each, env_vars)
-
-            # Call the flag function
-            if prompt_execution(f"Do you want to change {each} flag? (y/n): "):
+            if change_flag:
                 change_nation_flag(session, each, env_vars)
-
-            # Call the mover function
-            if prompt_execution(f"Do you want to move {each} to target region? (y/n): "):
+            if move_region:
                 move_to_region(session, each, env_vars)
-                
-            # Call the bidding function
-            if prompt_execution(f"Do you want to place bids? (y/n): "):
-                bid_on_cards(session, env_vars)   
+            if place_bids:
+                bid_on_cards(session, env_vars)
         elif not skip_login:
-            print(f"Could not login with {each}")
-            input("Slow down and try again.")
+            logging.warning(f"Could not login with {each}")
+
 
 
 def main():
-    """
-    Main entry point for the script. Initializes an NSSession, extracts environment variables,
-    reads the list of nations, and processes each nation in turn. Any exceptions that occur during
-    execution are caught and logged to a file.
-    """
-
     try:
         env_vars = get_env_vars()
         session = NSSession("Que", "2.2.0", "Unshleepd", env_vars['UA'])
         with open("que.txt", "r") as q:
             pups = q.readlines()
 
-        process_nations(session, pups, env_vars)
-        
+        process_nations(
+            session,
+            pups,
+            env_vars,
+            change_settings=True,
+            change_flag=True,
+            move_region=True,
+            place_bids=True
+        )
 
     except EnvironmentError as e:
         logging.error(f"Configuration error: {e}")
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
+
 
 
 if __name__ == "__main__":
