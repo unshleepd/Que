@@ -72,9 +72,12 @@ def get_env_vars():
     missing_vars = [k for k, v in env_vars.items() if v is None and k not in ['card_ids', 'seasons', 'prices']]
     if missing_vars:
         # Raise an error if any required variables are missing
-        raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}")
+        raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}.")
 
     return env_vars  # Return the dictionary of environment variables
+
+
+
 
 def check_population(session, nation):
     """
@@ -118,10 +121,10 @@ def bid_on_cards(session, env_vars):
         try:
             # Place a bid on the card
             session.bid(price, card_id, season)
-            logger.info(f"Successfully placed bid for card {card_id} in season {season} with price {price}")
+            logger.info("Successfully placed bid for card %s in season %s with price %s.", card_id, season, price)
         except Exception as e:
             # Log any errors encountered
-            logger.error(f"Error placing bid for card {card_id} in season {season} with price {price}: {e}")
+            logger.error("Error placing bid for card %s in season %s with price %s: %s.", card_id, season, price, e)
 
 def change_nation_settings(session, nation, env_vars):
     """
@@ -159,35 +162,26 @@ def change_nation_settings(session, nation, env_vars):
             settings['pretitle'] = env_vars['pretitle']
         else:
             # Otherwise, log that pretitle cannot be changed
-            logger.info(f"The population of nation {nation} is less than 250 million. Pretitle cannot be changed.")
+            logger.info("The population of nation %s is less than 250 million. Pretitle cannot be changed.", nation)
 
         # Apply the new settings to the nation
         session.change_nation_settings(**settings)
-        logger.info(f"Successfully changed settings for nation {nation}")
+        logger.info("Successfully changed settings for nation %s.", nation)
     except Exception as e:
         # Log any errors that occur during the process
-        logger.error(f"Error changing settings for nation {nation}: {e}")
+        logger.error("Error changing settings for nation %s: %s.", nation, e)
 
 def change_nation_flag(session, nation, env_vars):
     """
     Attempts to change a nation's flag.
-
-    Parameters:
-        session (NSSession): An authenticated NationStates session.
-        nation (str): The name of the nation whose flag is to be changed.
-        env_vars (dict): A dictionary of environment variables containing the new flag.
-
-    Logs:
-        Info: Successful flag change.
-        Error: Errors encountered during flag change.
     """
     try:
         # Change the nation's flag using the provided flag data
         session.change_nation_flag(env_vars['flag'])
-        logger.info(f"Successfully changed flag for nation {nation}")
+        logger.info("Successfully changed flag for nation %s.", nation)
     except Exception as e:
         # Log any errors that occur during the flag change
-        logger.error(f"Error changing flag for nation {nation}: {e}")
+        logger.error("Error changing flag for nation %s: %s.", nation, e)
 
 def move_to_region(session, nation, env_vars):
     """
@@ -205,10 +199,10 @@ def move_to_region(session, nation, env_vars):
     try:
         # Move the nation to the target region, using a password if necessary
         session.move_to_region(env_vars['target_region'], env_vars['target_region_password'])
-        logger.info(f"Successfully moved nation {nation} to target region")
+        logger.info("Successfully moved nation %s to %s.", nation, env_vars['target_region'])
     except Exception as e:
         # Log any errors that occur during the move
-        logger.error(f"Error moving nation {nation} to target region: {e}")
+        logger.error("Error moving nation %s to %s: %s.", nation, env_vars['target_region'], e)
 
 def process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids):
     """
@@ -234,7 +228,7 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
         if session.can_nation_be_founded(each):
             # Since the nation doesn't exist, skip login
             skip_login = True
-            logger.warning(f"Nation {each} does not exist. Skipping.")
+            logger.warning("Nation %s does not exist. Skipping.", each)
 
         # Try to log in to the nation if not skipping login
         if not skip_login and session.login(each, env_vars['password']):
@@ -249,7 +243,34 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
                 bid_on_cards(session, env_vars)
         elif not skip_login:
             # Unable to log in to the nation
-            logger.warning(f"Could not log in with {each}")
+            logger.warning("Could not log in with %s.", each)
+
+
+
+def wa_vote(session, nation_name, assembly, vote_choice):
+    """
+    Casts a vote in the World Assembly (WA) on behalf of a nation.
+    Returns True on success, False otherwise.
+    """
+    # Retrieve environment variables
+    env_vars = get_env_vars()
+    # Log in to the nation
+    if session.login(nation_name, env_vars['password']):
+        try:
+            logging.info("Starting WA voting for nation: %s", nation_name)
+            # Perform the vote
+            session.wa_vote(assembly, vote_choice)
+            # If no exception, vote was successful
+            assembly_full_name = "General Assembly" if assembly.lower() == 'ga' else "Security Council"
+            logger.info("Successfully voted %s on %s resolution for nation %s.", vote_choice.upper(), assembly_full_name, nation_name)
+            return True
+        except Exception as e:
+            logger.error("Failed to vote for nation %s: %s", nation_name, e)
+            return False
+    else:
+        logger.error("Could not log in with nation %s.", nation_name)
+        return False
+
 
 def main():
     """
@@ -285,15 +306,10 @@ def main():
 
     except EnvironmentError as e:
         # Handle missing environment variables
-        logger.error(f"Configuration error: {e}")
+        logger.error("Configuration error: %s.", e)
     except Exception as e:
         # Handle any other unexpected errors
-        logger.error(f"An unexpected error occurred: {e}")
+        logger.error("An unexpected error occurred: %s.", e)
 
 if __name__ == "__main__":
-    # Configure logging when running as the main script
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(message)s', datefmt='%I:%M:%S %p'
-    )
     main()  # Call the main function when the script is executed directly
