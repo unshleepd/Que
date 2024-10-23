@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "que"
+version = "3.0.0"
+description = "Que is an easy way to change settings of puppets and move them between regions in the game Nationstates."
+authors = ["Unshleepd"]
+license = "AGPL3.0-or-later"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+requests = "^2.31.0"
+numpy = "^1.25.0"
+sphinx = "^7.0.1"
+sphinx-autodoc-typehints = "^1.23.2"
+python-dotenv = "^1.0.1"
+nsdotpy = "^2.3.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pdoc = "^14.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
