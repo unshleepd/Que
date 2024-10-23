@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 This script facilitates various operations related to NationStates, including
-changing nation settings, moving to a different region, and placing bids on cards.
+changing nation settings, moving to a different region, placing bids on cards,
+voting in the World Assembly, and endorsing nations.
 
 Functions:
 - get_env_vars(): Extracts and validates environment variables.
@@ -11,7 +12,9 @@ Functions:
 - change_nation_settings(session, nation, env_vars): Updates a nation's settings.
 - change_nation_flag(session, nation, env_vars): Changes a nation's flag.
 - move_to_region(session, nation, env_vars): Moves a nation to a target region.
+- endorse_nations(session, endorser_nation, target_nations, password): Endorses a list of nations using an endorser nation.
 - process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids): Processes a list of nations.
+- wa_vote(session, nation_name, assembly, vote_choice): Votes in the WA.
 - main(): Main function to orchestrate nation processing.
 """
 
@@ -22,9 +25,6 @@ from nsdotpy.session import NSSession  # Import NSSession class from nsdotpy lib
 
 # Get a logger for this module
 logger = logging.getLogger(__name__)
-"""
-Initializes and returns a logger instance for this module.
-"""
 
 # Load environment variables from .env files
 load_dotenv('config.env')  # Load general configuration variables from config.env
@@ -75,9 +75,6 @@ def get_env_vars():
         raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}.")
 
     return env_vars  # Return the dictionary of environment variables
-
-
-
 
 def check_population(session, nation):
     """
@@ -204,7 +201,69 @@ def move_to_region(session, nation, env_vars):
         # Log any errors that occur during the move
         logger.error("Error moving nation %s to %s: %s.", nation, env_vars['target_region'], e)
 
-def process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids):
+# que.py
+
+def endorse_nations(session, endorser_nation, target_nations, password, progress_callback=None):
+    """
+    Logs into the endorser nation and endorses a list of target nations.
+
+    Parameters:
+        session (NSSession): An authenticated NationStates session.
+        endorser_nation (str): The nation that will perform the endorsements.
+        target_nations (list): The list of nations to be endorsed.
+        password (str): The password for the endorser nation.
+        progress_callback (callable, optional): Function to call with progress updates.
+
+    Returns:
+        bool: True if endorsements were successful, False otherwise.
+    """
+    try:
+        if session.login(endorser_nation, password):
+            total_nations = len(target_nations)
+            for index, target_nation in enumerate(target_nations):
+                try:
+                    session.endorse(target_nation)
+                    logger.info("%s has endorsed %s.", endorser_nation, target_nation)
+                except Exception as e:
+                    logger.error("An error occurred while endorsing %s with %s: %s", target_nation, endorser_nation, e)
+                # Update progress
+                if progress_callback:
+                    progress = int(((index + 1) / total_nations) * 100)
+                    progress_callback(progress)
+            return True
+        else:
+            logger.error("Could not log in with nation %s.", endorser_nation)
+            return False
+    except Exception as e:
+        logger.error("An error occurred during endorsements with %s: %s", endorser_nation, e)
+        return False
+
+
+def wa_vote(session, nation_name, assembly, vote_choice):
+    """
+    Casts a vote in the World Assembly (WA) on behalf of a nation.
+    Returns True on success, False otherwise.
+    """
+    # Retrieve environment variables
+    env_vars = get_env_vars()
+    # Log in to the nation
+    if session.login(nation_name, env_vars['password']):
+        try:
+            logger.info("Starting WA voting for nation: %s", nation_name)
+            # Perform the vote
+            session.wa_vote(assembly, vote_choice)
+            # If no exception, vote was successful
+            assembly_full_name = "General Assembly" if assembly.lower() == 'ga' else "Security Council"
+            logger.info("Successfully voted %s on %s resolution for nation %s.", vote_choice.upper(), assembly_full_name, nation_name)
+            return True
+        except Exception as e:
+            logger.error("Failed to vote for nation %s: %s", nation_name, e)
+            return False
+    else:
+        logger.error("Could not log in with nation %s.", nation_name)
+        return False
+
+def process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids, progress_callback=None):
     """
     Processes a list of nations, performing operations based on the provided flags.
 
@@ -216,11 +275,13 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
         change_flag (bool): Whether to change the nation's flag.
         move_region (bool): Whether to move the nation to a target region.
         place_bids (bool): Whether to place bids on cards.
+        progress_callback (callable, optional): A callback function to update progress.
 
     Logs:
         Warning: If unable to log in to a nation.
     """
-    for each in nations:
+    total_nations = len(nations)
+    for index, each in enumerate(nations):
         each = each.strip()  # Remove any leading/trailing whitespace
         skip_login = False  # Flag to determine if login should be skipped
 
@@ -245,31 +306,10 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
             # Unable to log in to the nation
             logger.warning("Could not log in with %s.", each)
 
-
-
-def wa_vote(session, nation_name, assembly, vote_choice):
-    """
-    Casts a vote in the World Assembly (WA) on behalf of a nation.
-    Returns True on success, False otherwise.
-    """
-    # Retrieve environment variables
-    env_vars = get_env_vars()
-    # Log in to the nation
-    if session.login(nation_name, env_vars['password']):
-        try:
-            logging.info("Starting WA voting for nation: %s", nation_name)
-            # Perform the vote
-            session.wa_vote(assembly, vote_choice)
-            # If no exception, vote was successful
-            assembly_full_name = "General Assembly" if assembly.lower() == 'ga' else "Security Council"
-            logger.info("Successfully voted %s on %s resolution for nation %s.", vote_choice.upper(), assembly_full_name, nation_name)
-            return True
-        except Exception as e:
-            logger.error("Failed to vote for nation %s: %s", nation_name, e)
-            return False
-    else:
-        logger.error("Could not log in with nation %s.", nation_name)
-        return False
+        # Update progress
+        progress = int(((index + 1) / total_nations) * 100)
+        if progress_callback:
+            progress_callback(progress)
 
 
 def main():
@@ -277,7 +317,7 @@ def main():
     Main function that orchestrates the processing of nations.
 
     It retrieves environment variables, initializes the session, reads the list of nations,
-    and calls process_nations() with the appropriate flags.
+    and calls process_nations() or endorse_nations() with the appropriate flags.
 
     Logs:
         Error: Configuration errors or unexpected exceptions.
@@ -289,20 +329,15 @@ def main():
         # Initialize the NationStates session with appropriate user agent
         session = NSSession("Que", "3.0.0", "Unshleepd", env_vars['UA'])
 
-        # Read the list of nations from a file named 'que.txt'
-        with open("que.txt", "r") as q:
-            pups = q.readlines()  # Read all lines (nation names)
+        # Example usage (to be replaced with actual implementation as needed)
 
-        # Process the nations with the specified operations
-        process_nations(
-            session,
-            pups,
-            env_vars,
-            change_settings=True,  # Set to True to change nation settings
-            change_flag=True,      # Set to True to change nation flag
-            move_region=True,      # Set to True to move nation to a region
-            place_bids=True        # Set to True to place bids on cards
-        )
+        # Process endorsements
+        # Assume endorser_nation is provided and target_nations is a list of nations to endorse
+        endorser_nation = "endorser_nation_name"  # Replace with actual endorser nation name
+        target_nations = ["nation1", "nation2"]   # Replace with actual target nations
+
+        # Perform endorsements
+        endorse_nations(session, endorser_nation, target_nations, env_vars['password'])
 
     except EnvironmentError as e:
         # Handle missing environment variables
