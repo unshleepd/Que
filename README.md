@@ -1,3 +1,5 @@
+BELOW TOOL USES CUSTON NSDOTPY - NOT YET SENT FOR audreyreal TO MERGE INTO ORGINAL NSDOTPY
+
 # Que
 
 Que is an easy-to-use tool for managing NationStates puppets. It allows you to change puppet settings, move them between regions, and more in the game [NationStates](https://www.nationstates.net/).
