@@ -1,2 +1,0 @@
-python que.py
-pause
