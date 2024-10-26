@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "que"
-version = "3.0.0"
+version = "3.5.0"
 description = "Que is an easy way to change settings of puppets and move them between regions in the game Nationstates."
 authors = ["Unshleepd"]
 license = "AGPL3.0-or-later"
