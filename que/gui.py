@@ -8,16 +8,36 @@ It offers functionality to change settings, change flags, move to regions, place
 vote in the World Assembly, endorse nations, and manage configuration settings via a GUI.
 """
 
+import os
 import sys
 import threading
 import logging
-import os
+from typing import Optional, Callable, Dict
+
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QTabWidget, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QFileDialog, QCheckBox, QTextEdit, QRadioButton, QButtonGroup,
-    QLineEdit, QMessageBox, QSizePolicy, QProgressBar, QFormLayout, QComboBox
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QTabWidget,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QFileDialog,
+    QCheckBox,
+    QTextEdit,
+    QRadioButton,
+    QButtonGroup,
+    QLineEdit,
+    QMessageBox,
+    QSizePolicy,
+    QProgressBar,
+    QFormLayout,
+    QComboBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QObject
+from PyQt6.QtGui import QCloseEvent  # Updated import
+
 from que import (
     get_env_vars,      # Function to retrieve environment variables
     process_nations,   # Function to process nations
@@ -26,6 +46,7 @@ from que import (
     NSSession          # Class representing a NationStates session
 )
 
+
 class QtHandler(logging.Handler):
     """
     A custom logging handler that emits log records to a PyQt signal.
@@ -33,7 +54,8 @@ class QtHandler(logging.Handler):
     This handler allows log messages to be displayed in the GUI by emitting them
     through a PyQt signal, enabling real-time log updates in the application.
     """
-    def __init__(self, signal):
+
+    def __init__(self, signal: pyqtSignal) -> None:
         """
         Initialize the QtHandler with a specific PyQt signal.
 
@@ -43,7 +65,7 @@ class QtHandler(logging.Handler):
         super().__init__()
         self.signal = signal
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """
         Emit a log record to the connected PyQt signal.
 
@@ -54,6 +76,7 @@ class QtHandler(logging.Handler):
         # Emit the signal using QueuedConnection
         self.signal.emit(msg)
 
+
 class MainWindow(QMainWindow):
     """
     The main window of the application, providing a GUI for interacting with NationStates operations.
@@ -61,6 +84,7 @@ class MainWindow(QMainWindow):
     This class sets up the GUI, including tabs for processing puppets, WA voting, endorsement,
     and settings. It handles user interactions, logging, and threading for background operations.
     """
+
     log_signal = pyqtSignal(str)
     error_signal = pyqtSignal(str)
     info_signal = pyqtSignal(str, str)  # title, message
@@ -73,21 +97,22 @@ class MainWindow(QMainWindow):
     voting_finished_signal = pyqtSignal()
     endorsement_finished_signal = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the main window, set up the UI components, and connect signals to slots.
         """
         super().__init__()
 
         self.setWindowTitle("Que - An easy way to process puppets")
-        self.script_thread = None  # Track the running thread of the script
-        self.selected_file = None  # Track the path of the selected file
+        self.script_thread: Optional[threading.Thread] = None  # Track the running thread of the script
+        self.selected_file: Optional[str] = None  # Track the path of the selected file
+        self.endorse_file: Optional[str] = None  # Track the path of the endorse file
 
         # Control variables for switches
-        self.change_settings = True
-        self.change_flag = True
-        self.move_region = True
-        self.place_bids = True
+        self.change_settings: bool = True
+        self.change_flag: bool = True
+        self.move_region: bool = True
+        self.place_bids: bool = True
 
         # Connect signals to slots with QueuedConnection
         self.log_signal.connect(self.append_log, Qt.ConnectionType.QueuedConnection)
@@ -103,7 +128,7 @@ class MainWindow(QMainWindow):
         # Set up the main UI
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """
         Set up the user interface elements of the main window.
 
@@ -156,7 +181,7 @@ class MainWindow(QMainWindow):
 
         logging.info("GUI initialized successfully.")
 
-    def apply_styles(self):
+    def apply_styles(self) -> None:
         """
         Apply custom stylesheets to enhance the visual appearance of the application.
         """
@@ -210,7 +235,7 @@ class MainWindow(QMainWindow):
             }
         """)
 
-    def setup_process_tab(self, tab):
+    def setup_process_tab(self, tab: QWidget) -> None:
         """
         Set up the 'Process Puppets' tab with its widgets and layouts.
 
@@ -274,7 +299,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(button_layout)
         main_layout.addStretch()
 
-    def setup_voting_tab(self, tab):
+    def setup_voting_tab(self, tab: QWidget) -> None:
         """
         Set up the 'WA Voting' tab with its widgets and layouts.
 
@@ -335,7 +360,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(button_layout)
         main_layout.addStretch()
 
-    def setup_endorse_tab(self, tab):
+    def setup_endorse_tab(self, tab: QWidget) -> None:
         """
         Set up the 'Endorse' tab with its widgets and layouts.
 
@@ -389,7 +414,7 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(button_layout)
         main_layout.addStretch()
 
-    def setup_settings_tab(self, tab):
+    def setup_settings_tab(self, tab: QWidget) -> None:
         """
         Set up the 'Settings' tab with input fields to load and save configuration settings.
 
@@ -416,7 +441,7 @@ class MainWindow(QMainWindow):
             {'key': 'FLAG', 'label': 'Flag', 'placeholder': 'File name of your flag like flag.png', 'min_length': 0, 'max_length': None},
         ]
         form_layout = QFormLayout()
-        self.settings_entries = {}  # Dictionary to store widgets for settings
+        self.settings_entries: Dict[str, QWidget] = {}  # Dictionary to store widgets for settings
 
         for setting in settings:
             key = setting['key']
@@ -435,8 +460,8 @@ class MainWindow(QMainWindow):
                 # Use QLineEdit plus Browse button
                 line_edit = QLineEdit()
                 line_edit.setPlaceholderText(placeholder)
-                line_edit.min_length = min_length
-                line_edit.max_length = max_length
+                setattr(line_edit, 'min_length', min_length)
+                setattr(line_edit, 'max_length', max_length)
                 browse_button = QPushButton("Browse")
                 browse_button.clicked.connect(self.browse_flag_file)
                 h_layout = QHBoxLayout()
@@ -448,8 +473,8 @@ class MainWindow(QMainWindow):
                 # Use QLineEdit
                 line_edit = QLineEdit()
                 line_edit.setPlaceholderText(placeholder)
-                line_edit.min_length = min_length
-                line_edit.max_length = max_length
+                setattr(line_edit, 'min_length', min_length)
+                setattr(line_edit, 'max_length', max_length)
                 self.settings_entries[key] = line_edit
                 form_layout.addRow(QLabel(label_text), line_edit)
 
@@ -478,7 +503,7 @@ class MainWindow(QMainWindow):
         # Load existing settings
         self.load_settings()
 
-    def browse_flag_file(self):
+    def browse_flag_file(self) -> None:
         """
         Open a file dialog to select a flag file and update the 'FLAG' field in settings.
         """
@@ -487,9 +512,11 @@ class MainWindow(QMainWindow):
         )
         if file_name:
             # Set the full path to the FLAG QLineEdit
-            self.settings_entries['FLAG'].setText(file_name)
+            flag_entry = self.settings_entries['FLAG']
+            if isinstance(flag_entry, QLineEdit):
+                flag_entry.setText(file_name)
 
-    def load_config_file(self):
+    def load_config_file(self) -> None:
         """
         Open a file dialog to select a configuration file and load the settings.
         """
@@ -519,11 +546,11 @@ class MainWindow(QMainWindow):
                                 index = widget.findText(value, Qt.MatchFlag.MatchFixedString)
                                 if index >= 0:
                                     widget.setCurrentIndex(index)
-                    QMessageBox.information(self, "Success", f"Settings loaded from {file_path}")
+                QMessageBox.information(self, "Success", f"Settings loaded from {file_path}")
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Error loading config file: {e}")
 
-    def load_settings(self):
+    def load_settings(self) -> None:
         """
         Load existing settings from 'config.env' and populate the settings fields.
         """
@@ -548,7 +575,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Error loading settings: {e}")
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         """
         Save the settings to 'config.env' after validating the input fields.
         """
@@ -590,7 +617,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error saving settings: {e}")
 
-    def setup_logging(self):
+    def setup_logging(self) -> None:
         """
         Set up logging to both a file and the GUI log window.
 
@@ -613,7 +640,7 @@ class MainWindow(QMainWindow):
         qt_handler.setFormatter(formatter)
         logger.addHandler(qt_handler)
 
-    def append_log(self, msg):
+    def append_log(self, msg: str) -> None:
         """
         Append a log message to the shared log window.
 
@@ -622,7 +649,7 @@ class MainWindow(QMainWindow):
         """
         self.log_window.append(msg)
 
-    def select_file(self):
+    def select_file(self) -> None:
         """
         Open a file dialog to select a nations file and update the label.
 
@@ -636,7 +663,7 @@ class MainWindow(QMainWindow):
             self.selected_file = filepath
             self.file_label.setText(f"Selected file: {filepath}")
 
-    def select_endorse_file(self):
+    def select_endorse_file(self) -> None:
         """
         Open a file dialog to select a nations file for endorsement and update the label.
 
@@ -650,7 +677,7 @@ class MainWindow(QMainWindow):
             self.endorse_file = filepath
             self.endorse_file_label.setText(f"Selected file: {filepath}")
 
-    def start_script(self):
+    def start_script(self) -> None:
         """
         Start the processing script in a separate thread.
 
@@ -695,7 +722,7 @@ class MainWindow(QMainWindow):
         )
         self.script_thread.start()
 
-    def run_script(self, change_settings, change_flag, move_region, place_bids):
+    def run_script(self, change_settings: bool, change_flag: bool, move_region: bool, place_bids: bool) -> None:
         """
         Run the main processing script with the given parameters.
 
@@ -738,7 +765,7 @@ class MainWindow(QMainWindow):
             # Emit the signal
             self.script_finished_signal.emit()
 
-    def update_progress(self, value):
+    def update_progress(self, value: int) -> None:
         """
         Update the progress bar with the given value.
 
@@ -747,7 +774,7 @@ class MainWindow(QMainWindow):
         """
         self.progress_signal.emit(value)
 
-    def set_progress(self, value):
+    def set_progress(self, value: int) -> None:
         """
         Set the progress bar to a specific value.
 
@@ -756,7 +783,7 @@ class MainWindow(QMainWindow):
         """
         self.progress_bar.setValue(value)
 
-    def script_completed(self):
+    def script_completed(self) -> None:
         """
         Handle actions upon successful completion of the script.
 
@@ -767,7 +794,7 @@ class MainWindow(QMainWindow):
         # Reset the progress bar
         self.progress_bar.setValue(100)
 
-    def show_error_message(self, message):
+    def show_error_message(self, message: str) -> None:
         """
         Display an error message dialog.
 
@@ -776,7 +803,7 @@ class MainWindow(QMainWindow):
         """
         QMessageBox.critical(self, "Error", message)
 
-    def show_info_message(self, title, message):
+    def show_info_message(self, title: str, message: str) -> None:
         """
         Display an information message dialog.
 
@@ -786,7 +813,7 @@ class MainWindow(QMainWindow):
         """
         QMessageBox.information(self, title, message)
 
-    def on_script_finished(self):
+    def on_script_finished(self) -> None:
         """
         Slot called when the script thread finishes.
 
@@ -805,7 +832,7 @@ class MainWindow(QMainWindow):
         self.tabs.setTabEnabled(3, True)  # Enable 'Settings' tab
         self.script_thread = None
 
-    def start_voting(self):
+    def start_voting(self) -> None:
         """
         Start the World Assembly (WA) voting process in a separate thread.
 
@@ -840,7 +867,7 @@ class MainWindow(QMainWindow):
             daemon=True
         ).start()
 
-    def run_voting(self, nation_name, assembly, vote_choice):
+    def run_voting(self, nation_name: str, assembly: str, vote_choice: str) -> None:
         """
         Run the WA voting process.
 
@@ -871,7 +898,7 @@ class MainWindow(QMainWindow):
             # Emit the signal
             self.voting_finished_signal.emit()
 
-    def on_voting_finished(self):
+    def on_voting_finished(self) -> None:
         """
         Slot called when the voting thread finishes.
 
@@ -889,7 +916,7 @@ class MainWindow(QMainWindow):
         self.tabs.setTabEnabled(2, True)  # Enable 'Endorse' tab
         self.tabs.setTabEnabled(3, True)  # Enable 'Settings' tab
 
-    def start_endorsement(self):
+    def start_endorsement(self) -> None:
         """
         Start the endorsement process in a separate thread.
 
@@ -901,7 +928,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please enter the endorser nation name.")
             return
 
-        if not hasattr(self, 'endorse_file') or not self.endorse_file:
+        if not self.endorse_file:
             QMessageBox.warning(self, "Warning", "Please select a nations file to endorse.")
             return
 
@@ -924,7 +951,7 @@ class MainWindow(QMainWindow):
             daemon=True
         ).start()
 
-    def run_endorsement(self, endorser_nation, endorse_file):
+    def run_endorsement(self, endorser_nation: str, endorse_file: str) -> None:
         """
         Run the endorsement process.
 
@@ -963,7 +990,7 @@ class MainWindow(QMainWindow):
             # Emit the signal
             self.endorsement_finished_signal.emit()
 
-    def on_endorsement_finished(self):
+    def on_endorsement_finished(self) -> None:
         """
         Slot called when the endorsement thread finishes.
 
@@ -978,7 +1005,7 @@ class MainWindow(QMainWindow):
         self.tabs.setTabEnabled(1, True)  # Enable 'WA Voting' tab
         self.tabs.setTabEnabled(3, True)  # Enable 'Settings' tab
 
-    def update_endorse_progress(self, value):
+    def update_endorse_progress(self, value: int) -> None:
         """
         Update the endorsement progress bar.
 
@@ -987,7 +1014,7 @@ class MainWindow(QMainWindow):
         """
         self.endorse_progress_signal.emit(value)
 
-    def set_endorse_progress(self, value):
+    def set_endorse_progress(self, value: int) -> None:
         """
         Set the endorsement progress bar to a specific value.
 
@@ -996,7 +1023,7 @@ class MainWindow(QMainWindow):
         """
         self.endorse_progress_bar.setValue(value)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """
         Handle the window close event, ensuring that running threads are properly handled.
 
@@ -1018,6 +1045,7 @@ class MainWindow(QMainWindow):
                 event.ignore()
         else:
             event.accept()
+
 
 if __name__ == "__main__":
     # Entry point of the application.
