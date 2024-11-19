@@ -20,6 +20,8 @@ Functions:
 
 import os
 import logging
+from typing import Dict, List, Optional, Callable
+
 from dotenv import load_dotenv
 from nsdotpy.session import NSSession
 
@@ -30,7 +32,8 @@ logger = logging.getLogger(__name__)
 load_dotenv('config.env')  # Load general configuration variables
 load_dotenv('cards.env')   # Load card trading variables
 
-def get_env_vars():
+
+def get_env_vars() -> Dict[str, Optional[str]]:
     """
     Extracts and validates required environment variables from loaded .env files.
 
@@ -102,7 +105,8 @@ def get_env_vars():
 
     return env_vars
 
-def check_population(session, nation):
+
+def check_population(session: NSSession, nation: str) -> int:
     """
     Retrieves the population of a specified nation from the NationStates API.
 
@@ -118,7 +122,8 @@ def check_population(session, nation):
     population = int(response['population'])
     return population
 
-def bid_on_cards(session, env_vars):
+
+def bid_on_cards(session: NSSession, env_vars: Dict[str, Optional[str]]) -> None:
     """
     Places bids on specified cards using provided environment variables.
 
@@ -145,7 +150,8 @@ def bid_on_cards(session, env_vars):
         except Exception as e:
             logger.error("Error placing bid for card %s in season %s with price %s: %s.", card_id, season, price, e)
 
-def change_nation_settings(session, nation, env_vars):
+
+def change_nation_settings(session: NSSession, nation: str, env_vars: Dict[str, Optional[str]]) -> None:
     """
     Updates a nation's settings with provided environment variables.
 
@@ -187,7 +193,8 @@ def change_nation_settings(session, nation, env_vars):
     except Exception as e:
         logger.error("Error changing settings for nation %s: %s.", nation, e)
 
-def change_nation_flag(session, nation, env_vars):
+
+def change_nation_flag(session: NSSession, nation: str, env_vars: Dict[str, Optional[str]]) -> None:
     """
     Changes a nation's flag using the provided flag data.
 
@@ -207,7 +214,8 @@ def change_nation_flag(session, nation, env_vars):
     except Exception as e:
         logger.error("Error changing flag for nation %s: %s.", nation, e)
 
-def move_to_region(session, nation, env_vars):
+
+def move_to_region(session: NSSession, nation: str, env_vars: Dict[str, Optional[str]]) -> None:
     """
     Moves a nation to a specified target region.
 
@@ -227,7 +235,14 @@ def move_to_region(session, nation, env_vars):
     except Exception as e:
         logger.error("Error moving nation %s to %s: %s.", nation, env_vars['target_region'], e)
 
-def endorse_nations(session, endorser_nation, target_nations, password, progress_callback=None):
+
+def endorse_nations(
+    session: NSSession,
+    endorser_nation: str,
+    target_nations: List[str],
+    password: str,
+    progress_callback: Optional[Callable[[int], None]] = None
+) -> bool:
     """
     Endorses a list of target nations using the endorser nation.
 
@@ -266,7 +281,8 @@ def endorse_nations(session, endorser_nation, target_nations, password, progress
         logger.error("An error occurred during endorsements with %s: %s", endorser_nation, e)
         return False
 
-def wa_vote(session, nation_name, assembly, vote_choice):
+
+def wa_vote(session: NSSession, nation_name: str, assembly: str, vote_choice: str) -> bool:
     """
     Casts a vote in the World Assembly (WA) on behalf of a nation.
 
@@ -301,7 +317,17 @@ def wa_vote(session, nation_name, assembly, vote_choice):
         logger.error("Could not log in with nation %s.", nation_name)
         return False
 
-def process_nations(session, nations, env_vars, change_settings, change_flag, move_region, place_bids, progress_callback=None):
+
+def process_nations(
+    session: NSSession,
+    nations: List[str],
+    env_vars: Dict[str, Optional[str]],
+    change_settings: bool,
+    change_flag: bool,
+    move_region: bool,
+    place_bids: bool,
+    progress_callback: Optional[Callable[[int], None]] = None
+) -> None:
     """
     Processes a list of nations, performing operations based on provided flags.
 
@@ -318,7 +344,7 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
     Logs:
         - Warning: If unable to log in to a nation.
         - Info: Progress updates.
-        """
+    """
     total_nations = len(nations)
     for index, each in enumerate(nations):
         each = each.strip()
@@ -348,7 +374,8 @@ def process_nations(session, nations, env_vars, change_settings, change_flag, mo
             progress = int(((index + 1) / total_nations) * 100)
             progress_callback(progress)
 
-def main():
+
+def main() -> None:
     """
     Main function that orchestrates the processing of nations.
 
@@ -384,6 +411,7 @@ def main():
         logger.error("Configuration error: %s.", e)
     except Exception as e:
         logger.error("An unexpected error occurred: %s.", e)
+
 
 if __name__ == "__main__":
     main()
